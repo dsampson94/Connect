@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String        @unique
+  password      String
+  jobTitle      String
+  department    String
+  contactInfo   String
+  role          String        @default("Employee")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  tasks         Task[]
+  projects      Project[]
+  timeEntries   TimeEntry[]
+  meetings      Meeting[]
+  leaveRequests LeaveRequest[]
+  uploadedFiles File[] @relation("uploadedFiles")
+  attendees     Attendee[]
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  status      String       @default("ToDo")
+  priority    String       @default("Low")
+  deadline    DateTime
+  assignee    User         @relation(fields: [assigneeId], references: [id])
+  assigneeId  String
+  project     Project      @relation(fields: [projectId], references: [id])
+  projectId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  files       File[]
+  timeEntries TimeEntry[]
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  status      String    @default("NotStarted") // Allowed values: "NotStarted", "InProgress", "Completed", "OnHold"
+  manager     User      @relation(fields: [managerId], references: [id])
+  managerId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tasks       Task[]
+  files       File[]
+}
+
+model File {
+  id          String   @id @default(uuid())
+  name        String
+  fileType    String
+  url         String
+  uploader    User   @relation("uploadedFiles", fields: [uploaderId], references: [id])
+  uploaderId  String
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  task        Task?     @relation(fields: [taskId], references: [id])
+  taskId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimeEntry {
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String
+  task      Task?  @relation(fields: [taskId], references: [id])
+  taskId    String?
+  startTime  DateTime
+  endTime    DateTime
+  duration   Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Meeting {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  organizer   User      @relation(fields: [organizerId], references: [id])
+  organizerId String
+  attendees   Attendee[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Attendee {
+  id        String   @id @default(uuid())
+  userId    String
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model LeaveRequest {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  startDate  DateTime
+  endDate    DateTime
+  status     String      @default("Pending")
+  reason     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
